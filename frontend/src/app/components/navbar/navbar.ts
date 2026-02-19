@@ -1,4 +1,4 @@
-import { Component, HostListener, inject } from '@angular/core';
+import { Component,EventEmitter, HostListener, inject, Output } from '@angular/core';
 import { Router, RouterLink } from '@angular/router';
 import { CommonModule } from '@angular/common';
 import { LucideAngularModule } from 'lucide-angular';
@@ -11,6 +11,8 @@ import { AuthService } from '../../services/auth.service';
   templateUrl: './navbar.html'
 })
 export class Navbar {
+    @Output() menuClick = new EventEmitter<void>();
+
   private router = inject(Router);
   private auth = inject(AuthService);
 
