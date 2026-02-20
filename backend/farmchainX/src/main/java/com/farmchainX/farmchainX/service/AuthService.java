@@ -15,7 +15,6 @@ import com.farmchainX.farmchainX.model.Role;
 import com.farmchainX.farmchainX.model.User;
 import com.farmchainX.farmchainX.repository.RoleRepository;
 import com.farmchainX.farmchainX.repository.UserRepository;
-
 @Service
 public class AuthService {
 
@@ -23,16 +22,18 @@ public class AuthService {
     private final RoleRepository roleRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
-
+    private final NotificationService notificationService;
     public AuthService(
             UserRepository userRepository,
             RoleRepository roleRepository,
             PasswordEncoder passwordEncoder,
-            JwtUtil jwtUtil) {
+            JwtUtil jwtUtil,
+            NotificationService notificationService) {
         this.userRepository = userRepository;
         this.roleRepository = roleRepository;
         this.passwordEncoder = passwordEncoder;
         this.jwtUtil = jwtUtil;
+        this.notificationService = notificationService;
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -124,8 +125,17 @@ public class AuthService {
 
         // ✅ Generate token
         String token = jwtUtil.generateToken(user.getEmail(), primaryRole, user.getId());
+        // 🔔 Create login notification
+notificationService.createNotification(
+        user,
+        "Login Successful",
+        "You logged in on " +
+                java.time.LocalDateTime.now()
+                        .format(java.time.format.DateTimeFormatter.ofPattern("dd MMM yyyy, hh:mm a"))
+);
 
         return new AuthResponse(token, primaryRole, user.getEmail(), user.getName());
+        
     }
 
     public AuthResponse refreshToken(String refreshToken) {
