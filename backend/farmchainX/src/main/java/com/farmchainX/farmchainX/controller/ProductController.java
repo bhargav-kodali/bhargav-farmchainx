@@ -29,15 +29,16 @@ import org.springframework.web.multipart.MultipartFile;
 
 import com.farmchainX.farmchainX.model.AIPrediction;
 import com.farmchainX.farmchainX.model.Product;
+import com.farmchainX.farmchainX.model.RetailerInventory;
 import com.farmchainX.farmchainX.model.SupplyChainLog;
 import com.farmchainX.farmchainX.model.User;
-import com.farmchainX.farmchainX.model.RetailerInventory;
 import com.farmchainX.farmchainX.repository.AIPredictionRepository;
 import com.farmchainX.farmchainX.repository.FeedbackRepository;
 import com.farmchainX.farmchainX.repository.ProductRepository;
+import com.farmchainX.farmchainX.repository.RetailerInventoryRepository;
 import com.farmchainX.farmchainX.repository.SupplyChainLogRepository;
 import com.farmchainX.farmchainX.repository.UserRepository;
-import com.farmchainX.farmchainX.repository.RetailerInventoryRepository;
+import com.farmchainX.farmchainX.service.NotificationService;
 import com.farmchainX.farmchainX.service.ProductService;
 import com.farmchainX.farmchainX.util.HashUtil;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -45,7 +46,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 @RestController
 @RequestMapping("/api")
 public class ProductController {
-
+    private final NotificationService notificationService;
     private final ProductRepository productRepository;
     private final ProductService productService;
     private final UserRepository userRepository;
@@ -63,7 +64,8 @@ public class ProductController {
             FeedbackRepository feedbackRepository,
             @org.springframework.beans.factory.annotation.Autowired(required = false) com.farmchainX.farmchainX.service.GroqAIService groqAIService,
             AIPredictionRepository aiPredictionRepository,
-            RetailerInventoryRepository retailerInventoryRepository) {
+            RetailerInventoryRepository retailerInventoryRepository,
+            NotificationService notificationService) {
         this.productService = productService;
         this.userRepository = userRepository;
         this.productRepository = productRepository;
@@ -72,6 +74,7 @@ public class ProductController {
         this.groqAIService = groqAIService;
         this.aiPredictionRepository = aiPredictionRepository;
         this.retailerInventoryRepository = retailerInventoryRepository;
+        this.notificationService = notificationService;
     }
 
     @PostMapping("/products/upload")
@@ -232,7 +235,11 @@ public class ProductController {
             response.put("qualityGrade", saved.getQualityGrade());
             response.put("confidenceScore", saved.getConfidenceScore());
             response.put("aiPrediction", aiPrediction);
-
+            // 🔔 Create product notification
+            notificationService.createNotification(
+                    farmer,
+                    "Product Created",
+                    "Your product \"" + saved.getCropName() + "\" was added successfully.");
             return ResponseEntity.ok(response);
         } catch (Exception e) {
             return ResponseEntity.badRequest().body(Map.of("error", "Upload failed: " + e.getMessage()));
@@ -627,12 +634,4 @@ public class ProductController {
                 .collect(java.util.stream.Collectors.toList());
     }
 
-    @GetMapping("/notifications")
-    @PreAuthorize("hasAnyRole('CONSUMER', 'FARMER', 'DISTRIBUTOR', 'RETAILER', 'ADMIN')")
-    public List<Map<String, Object>> getNotifications(Principal principal) {
-        if (principal == null) {
-            return List.of();
-        }
-        return productService.getUserNotifications(principal.getName());
-    }
 }
