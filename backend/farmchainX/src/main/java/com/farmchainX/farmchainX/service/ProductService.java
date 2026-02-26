@@ -44,31 +44,9 @@ public class ProductService {
     }
 
     @Transactional
-    public Product saveProduct(Product product) {
-        Product saved = productRepository.save(product);
-        try {
-            String path = saved.getImagePath();
-            if (path == null || path.isBlank()) {
-                throw new IllegalStateException("Image path missing for grading");
-            }
-
-            // ✅ Let AiService handle URL or local file. Do NOT pre-check with File.exists()
-            // here.
-            Map<String, Object> aiResult = aiService.predictQuality(path);
-
-            if (aiResult != null && aiResult.get("grade") != null && aiResult.get("confidence") != null) {
-                saved.setQualityGrade(String.valueOf(aiResult.get("grade")));
-                saved.setConfidenceScore(Double.parseDouble(aiResult.get("confidence").toString()));
-                return productRepository.save(saved);
-            } else {
-                throw new IllegalStateException("AI returned empty result");
-            }
-        } catch (Exception e) {
-            // Non-fatal: keep the product, leave grading as pending
-            System.err.println("[AI Grading Error] " + e.getClass().getSimpleName() + ": " + e.getMessage());
-            return saved;
-        }
-    }
+public Product saveProduct(Product product) {
+    return productRepository.save(product);
+}
 
     public List<Product> getProductsByFarmerId(Long farmerId) {
         userRepository.findById(farmerId).orElseThrow(() -> new RuntimeException("Farmer not found"));
@@ -84,32 +62,43 @@ public class ProductService {
     }
 
     public String generateProductQr(Long productId) {
-        Product product = productRepository.findById(productId)
-                .orElseThrow(() -> new RuntimeException("Product not found"));
-        product.ensurePublicUuid();
-        productRepository.save(product);
-        String publicUuid = product.getPublicUuid();
+    Product product = productRepository.findById(productId)
+            .orElseThrow(() -> new RuntimeException("Product not found"));
 
-        String frontendBase = System.getenv("FRONTEND_URL");
-        if (frontendBase == null || frontendBase.isBlank()) {
-            frontendBase = "http://localhost:4200";
-        }
+    product.ensurePublicUuid();
+    productRepository.save(product);
 
-        String qrText = frontendBase + "/verify/" + publicUuid;
-        try {
-            Path qrDir = Path.of("uploads", "qrcodes");
-            Files.createDirectories(qrDir);
-            String fileName = "qr_" + publicUuid + ".png";
-            Path qrFilePath = qrDir.resolve(fileName);
-            QrCodeGenerator.generateQR(qrText, qrFilePath.toString());
-            String webPath = "/uploads/qrcodes/" + fileName;
-            product.setQrCodePath(webPath);
-            productRepository.save(product);
-            return webPath;
-        } catch (Exception e) {
-            throw new RuntimeException("Error generating QR code: " + e.getMessage(), e);
-        }
+    String publicUuid = product.getPublicUuid();
+
+    String frontendBase = System.getenv("FRONTEND_URL");
+    if (frontendBase == null || frontendBase.isBlank()) {
+        frontendBase = "http://localhost:4200";
     }
+
+    String qrText = frontendBase + "/verify/" + publicUuid;
+
+    try {
+        String userDir = System.getProperty("user.dir");
+        Path qrDir = Path.of(userDir, "uploads", "qrcodes");
+        Files.createDirectories(qrDir);
+
+        String fileName = "qr_" + publicUuid + ".png";
+        Path qrFilePath = qrDir.resolve(fileName);
+
+        QrCodeGenerator.generateQR(qrText, qrFilePath.toString());
+
+        String webPath = "/uploads/qrcodes/" + fileName;
+
+        product.setQrCodePath(webPath);
+        productRepository.save(product);
+
+        return webPath;
+
+    } catch (Exception e) {
+        e.printStackTrace(); // IMPORTANT
+        throw new RuntimeException("Error generating QR code: " + e.getMessage(), e);
+    }
+}
 
     public byte[] getProductQRImage(Long productId) {
         Product product = productRepository.findById(productId)
@@ -135,6 +124,13 @@ public class ProductService {
         Map<String, Object> data = new HashMap<>();
         data.put("cropName", product.getCropName());
         data.put("harvestDate", product.getHarvestDate());
+        data.put("expiryDate", product.getExpiryDate());
+data.put("soilType", product.getSoilType());
+data.put("pesticides", product.getPesticides());
+data.put("quantity", product.getQuantity());
+data.put("quantityUnit", product.getQuantityUnit());
+data.put("batchId", product.getBatchId());
+data.put("address", product.getAddress());
         data.put("qualityGrade", product.getQualityGrade() != null ? product.getQualityGrade() : "Pending");
         data.put("confidence", product.getConfidenceScore() != null ? product.getConfidenceScore() : 0.0);
         data.put("imagePath", product.getImagePath()); // Match frontend

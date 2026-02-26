@@ -154,7 +154,9 @@ public class ProductController {
 
             saved.ensurePublicUuid();
             productRepository.save(saved);
-
+            String qrPath = productService.generateProductQr(saved.getId());
+saved.setQrCodePath(qrPath);
+productRepository.save(saved);
             // Generate AI prediction using Groq (if service available)
             Map<String, Object> aiPrediction = new HashMap<>();
             if (groqAIService != null) {
@@ -222,6 +224,17 @@ public class ProductController {
                     }
 
                     aiPredictionRepository.save(prediction);
+                
+                    // 🔥 Sync AI result back to Product table
+if (prediction.getQualityGrade() != null) {
+    saved.setQualityGrade(prediction.getQualityGrade());
+}
+
+if (prediction.getConfidence() != null) {
+    saved.setConfidenceScore(prediction.getConfidence().doubleValue());
+}
+
+productRepository.save(saved);
                 } catch (Exception e) {
                     System.err.println("[AI Prediction Save Error] " + e.getMessage());
                     // Continue even if saving prediction fails
@@ -368,11 +381,17 @@ public class ProductController {
             return ResponseEntity.status(403).body(Map.of("error", "You can only generate QR for your own products"));
         }
 
-        String qrPath = productService.generateProductQr(id);
-        return ResponseEntity.ok(Map.of(
-                "message", "QR Code generated successfully",
-                "qrPath", qrPath,
-                "verifyUrl", "https://yourdomain.com/verify/" + product.getPublicUuid()));
+        try {
+            String qrPath = productService.generateProductQr(id);
+            return ResponseEntity.ok(Map.of(
+                    "message", "QR Code generated successfully",
+                    "qrPath", qrPath,
+                    "verifyUrl", "https://yourdomain.com/verify/" + product.getPublicUuid()));
+        } catch (Exception e) {
+            // Log and return a clear JSON error to the frontend for debugging
+            e.printStackTrace();
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
     }
 
     @GetMapping("/products/{id}/qrcode/download")
@@ -398,6 +417,7 @@ public class ProductController {
 
     @GetMapping("/products/{id}/public")
     public Map<String, Object> getPublicView(@PathVariable Long id) {
+        
         return productService.getPublicView(id);
     }
 
