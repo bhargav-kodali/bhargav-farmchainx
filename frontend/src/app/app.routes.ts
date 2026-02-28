@@ -142,6 +142,13 @@ export const routes: Routes = [
       { path: '', redirectTo: 'overview', pathMatch: 'full' },
     ],
   },
+  // Marketplace
+      {
+  path: 'marketplace',
+  canActivate: [AuthGuard],
+  loadComponent: () =>
+    import('./pages/marketplace/marketplace.component').then(m => m.MarketplaceComponent)
+},
   // =======================
   // DISTRIBUTOR ROUTES
   // =======================
@@ -195,14 +202,7 @@ export const routes: Routes = [
           ),
       },
 
-      // Inventory
-      {
-        path: 'inventory',
-        loadComponent: () =>
-          import('./pages/distributor/inventory/inventory.component').then(
-            (m) => m.InventoryComponent
-          ),
-      },
+      
 
       // Dispatch
       {

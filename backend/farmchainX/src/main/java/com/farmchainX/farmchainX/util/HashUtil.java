@@ -11,12 +11,15 @@ public class HashUtil {
     public static String computeHash(SupplyChainLog log, String previousHash) {
         try {
             String data = log.getProductId() + "|" +
-                          log.getFromUserId() + "|" +
-                          log.getToUserId() + "|" +
-                          log.getTimestamp().toString() + "|" +
-                          (log.getLocation() == null ? "" : log.getLocation()) + "|" +
-                          (log.getNotes() == null ? "" : log.getNotes()) + "|" +
-                          (previousHash == null ? "" : previousHash);
+              log.getFromUserId() + "|" +
+              log.getToUserId() + "|" +
+              log.getTimestamp().toString() + "|" +
+              (log.getLocation() == null ? "" : log.getLocation()) + "|" +
+              (log.getLatitude() == null ? "" : log.getLatitude()) + "|" +
+              (log.getLongitude() == null ? "" : log.getLongitude()) + "|" +
+              (log.getResolvedAddress() == null ? "" : log.getResolvedAddress()) + "|" +
+              (log.getNotes() == null ? "" : log.getNotes()) + "|" +
+              (previousHash == null ? "" : previousHash);
 
             MessageDigest digest = MessageDigest.getInstance("SHA-256");
             byte[] hashBytes = digest.digest(data.getBytes(StandardCharsets.UTF_8));

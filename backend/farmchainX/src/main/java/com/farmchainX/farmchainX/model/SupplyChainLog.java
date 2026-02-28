@@ -1,7 +1,13 @@
 package com.farmchainX.farmchainX.model;
 
-import jakarta.persistence.*;
 import java.time.LocalDateTime;
+
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.Table;
 
 @Entity
 @Table(name = "supply_chain_log")
@@ -20,6 +26,10 @@ public class SupplyChainLog {
     private String prevHash;
     private String hash;
     private String action;
+    private Double latitude;
+    private Double longitude;
+    @Column(length = 500)
+    private String resolvedAddress;
 
     @Column(name = "created_by")
     private String createdBy;
@@ -180,4 +190,12 @@ public class SupplyChainLog {
     public void setQuantityTransferred(Double quantityTransferred) {
         this.quantityTransferred = quantityTransferred;
     }
+    public Double getLatitude() { return latitude; }
+public void setLatitude(Double latitude) { this.latitude = latitude; }
+
+public Double getLongitude() { return longitude; }
+public void setLongitude(Double longitude) { this.longitude = longitude; }
+
+public String getResolvedAddress() { return resolvedAddress; }
+public void setResolvedAddress(String resolvedAddress) { this.resolvedAddress = resolvedAddress; }
 }

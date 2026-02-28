@@ -69,7 +69,7 @@ onDocumentClick(event: MouseEvent) {
 
   toggleMobileMenu() {
     this.mobileMenuOpen = !this.mobileMenuOpen;
-    this.userMenuOpen = false;
+    
   }
 
   toggleUserMenu() {

@@ -5,6 +5,7 @@ import { Router } from '@angular/router';
 // Import map for the retry logic fix
 import { catchError, delay, retryWhen, scan, throwError, map } from 'rxjs';
 import { TitleCasePipe, DecimalPipe } from '@angular/common';
+import { environment } from '../../../environments/environment';
 
 // Define the type for the scan accumulator to make the logic clear
 interface RetryState {
@@ -39,8 +40,9 @@ export class MyProducts {
 
     //
 
-    this.http
-      .get<any>(`/api/products/my?page=${page}&size=${this.size}&sort=id,desc`)
+    this.http.get<any>(
+  `${environment.apiUrl}/products/my?page=${page}&size=${this.size}&sort=id,desc`
+)
       .pipe(
         retryWhen((errors) =>
           errors.pipe(
@@ -110,12 +112,14 @@ export class MyProducts {
   }
 
   generateQr(id: number) {
-    this.http.post<any>(`/api/products/${id}/qrcode`, {}).subscribe({
+    this.http.post<any>(
+  `${environment.apiUrl}/products/${id}/qrcode`,
+  {}
+).subscribe({
       next: (res) => {
         const product = this.products.find((p) => p.id === id)!;
-        const url = res.qrPath.startsWith('http')
-          ? res.qrPath
-          : `http://localhost:8080${res.qrPath}`;
+        const base = environment.apiUrl || 'http://localhost:8081';
+        const url = res.qrPath && res.qrPath.startsWith('http') ? res.qrPath : `${base}${res.qrPath}`;
         const filename = this.generateFilename(product);
 
         // Download the QR code automatically
@@ -125,6 +129,9 @@ export class MyProducts {
           a.download = filename;
           a.click();
           window.URL.revokeObjectURL(a.href);
+        }, (downloadErr) => {
+          console.error('QR download failed', downloadErr);
+          alert('QR generated but failed to download. You can view it in product details.');
         });
 
         // Show success message with highlight
@@ -133,7 +140,11 @@ export class MyProducts {
         // Reload to update the product with QR code path
         this.load(this.page);
       },
-      error: (err) => alert(err.error?.message || 'Failed to generate QR'),
+      error: (err) => {
+        console.error('QR generation error', err);
+        const serverMsg = err?.error?.error || err?.error?.message || err?.message || (err?.status ? `Server returned ${err.status} ${err.statusText}` : 'Failed to generate QR');
+        alert(serverMsg);
+      },
     });
   }
 
@@ -213,12 +224,16 @@ export class MyProducts {
   }
 
   getImageUrl(path: string): string {
-    return path?.startsWith('http') ? path : `http://localhost:8080${path}`;
-  }
+  return path?.startsWith('http')
+    ? path
+    : `${environment.apiUrl.replace('/api','')}${path}`;
+}
 
   getQrUrl(path: string): string {
-    return path?.startsWith('http') ? path : `http://localhost:8080${path}`;
-  }
+  return path?.startsWith('http')
+    ? path
+    : `${environment.apiUrl.replace('/api','')}${path}`;
+}
 
   formatDate(date: string | null): string {
     if (!date) return 'Unknown Date';
