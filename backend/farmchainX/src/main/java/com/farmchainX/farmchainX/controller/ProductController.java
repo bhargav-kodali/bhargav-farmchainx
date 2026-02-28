@@ -155,8 +155,8 @@ public class ProductController {
             saved.ensurePublicUuid();
             productRepository.save(saved);
             String qrPath = productService.generateProductQr(saved.getId());
-saved.setQrCodePath(qrPath);
-productRepository.save(saved);
+            saved.setQrCodePath(qrPath);
+            productRepository.save(saved);
             // Generate AI prediction using Groq (if service available)
             Map<String, Object> aiPrediction = new HashMap<>();
             if (groqAIService != null) {
@@ -224,17 +224,17 @@ productRepository.save(saved);
                     }
 
                     aiPredictionRepository.save(prediction);
-                
+
                     // 🔥 Sync AI result back to Product table
-if (prediction.getQualityGrade() != null) {
-    saved.setQualityGrade(prediction.getQualityGrade());
-}
+                    if (prediction.getQualityGrade() != null) {
+                        saved.setQualityGrade(prediction.getQualityGrade());
+                    }
 
-if (prediction.getConfidence() != null) {
-    saved.setConfidenceScore(prediction.getConfidence().doubleValue());
-}
+                    if (prediction.getConfidence() != null) {
+                        saved.setConfidenceScore(prediction.getConfidence().doubleValue());
+                    }
 
-productRepository.save(saved);
+                    productRepository.save(saved);
                 } catch (Exception e) {
                     System.err.println("[AI Prediction Save Error] " + e.getMessage());
                     // Continue even if saving prediction fails
@@ -417,7 +417,7 @@ productRepository.save(saved);
 
     @GetMapping("/products/{id}/public")
     public Map<String, Object> getPublicView(@PathVariable Long id) {
-        
+
         return productService.getPublicView(id);
     }
 
@@ -490,6 +490,16 @@ productRepository.save(saved);
         String location = (String) body.get("location");
         String note = Optional.ofNullable((String) body.get("note")).orElse("").trim();
         Object toUserObj = body.get("toUserId");
+        Object latObj = body.get("latitude");
+        Object lonObj = body.get("longitude");
+
+        Double latitude = latObj instanceof Number ? ((Number) latObj).doubleValue() : null;
+        Double longitude = lonObj instanceof Number ? ((Number) lonObj).doubleValue() : null;
+
+        String resolvedAddress = null;
+        if (latitude != null && longitude != null) {
+            resolvedAddress = productService.resolveAddressFromGps(latitude + "," + longitude);
+        }
         Long toUserId = (toUserObj instanceof Number) ? ((Number) toUserObj).longValue() : null;
 
         if (location == null || location.trim().isEmpty()) {
@@ -521,6 +531,10 @@ productRepository.save(saved);
                 pickupLog.setTimestamp(LocalDateTime.now());
 
                 String prevHash = lastLog != null ? lastLog.getHash() : "";
+                pickupLog.setLatitude(latitude);
+                pickupLog.setLongitude(longitude);
+                pickupLog.setResolvedAddress(resolvedAddress);
+
                 pickupLog.setPrevHash(prevHash);
                 pickupLog.setHash(HashUtil.computeHash(pickupLog, prevHash));
 
@@ -539,6 +553,10 @@ productRepository.save(saved);
                 trackingLog.setCreatedBy(currentUser.getEmail());
                 trackingLog.setConfirmed(true);
                 trackingLog.setTimestamp(LocalDateTime.now());
+                trackingLog.setLatitude(latitude);
+                trackingLog.setLongitude(longitude);
+                trackingLog.setResolvedAddress(resolvedAddress);
+
                 trackingLog.setPrevHash(lastLog.getHash());
                 trackingLog.setHash(HashUtil.computeHash(trackingLog, lastLog.getHash()));
                 supplyChainLogRepository.save(trackingLog);
@@ -561,6 +579,10 @@ productRepository.save(saved);
                 handover.setCreatedBy(currentUser.getEmail());
                 handover.setConfirmed(false);
                 handover.setTimestamp(LocalDateTime.now());
+                handover.setLatitude(latitude);
+                handover.setLongitude(longitude);
+                handover.setResolvedAddress(resolvedAddress);
+
                 handover.setPrevHash(lastLog.getHash());
                 handover.setHash(HashUtil.computeHash(handover, lastLog.getHash()));
 
@@ -587,6 +609,10 @@ productRepository.save(saved);
             confirmLog.setConfirmedAt(LocalDateTime.now());
             confirmLog.setConfirmedById(currentUser.getId());
             confirmLog.setTimestamp(LocalDateTime.now());
+            confirmLog.setLatitude(latitude);
+            confirmLog.setLongitude(longitude);
+            confirmLog.setResolvedAddress(resolvedAddress);
+
             confirmLog.setPrevHash(lastLog.getHash());
             confirmLog.setHash(HashUtil.computeHash(confirmLog, lastLog.getHash()));
 

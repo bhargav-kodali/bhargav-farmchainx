@@ -16,6 +16,10 @@ export class UploadProduct {
   pesticides = '';
   harvestDate = '';             // yyyy-MM-dd
   gpsLocation = '';
+  useAutoGps: boolean = true;
+
+  manualLatitude: string = '';
+  manualLongitude: string = '';
   price: number | null = null;
   quantity: number = 1000;  // Default quantity
   quantityUnit: string = 'kg';  // Default unit
@@ -52,21 +56,38 @@ export class UploadProduct {
   }
 
   detectGPS() {
-    if (!navigator.geolocation) {
-      alert("GPS not supported");
-      return;
-    }
+  if (!this.useAutoGps) return;
 
-    navigator.geolocation.getCurrentPosition(position => {
-      const lat = position.coords.latitude;
-      const lng = position.coords.longitude;
-      this.gpsLocation = `${lat},${lng}`;
-      alert('GPS detected');
-    }, (err) => {
-      console.warn('GPS error', err);
-      alert('Unable to detect GPS');
-    });
+  if (!navigator.geolocation) {
+    alert("GPS not supported");
+    return;
   }
+
+  navigator.geolocation.getCurrentPosition(position => {
+    const lat = position.coords.latitude;
+    const lng = position.coords.longitude;
+
+    this.manualLatitude = lat.toString();
+    this.manualLongitude = lng.toString();
+
+    this.gpsLocation = `${lat},${lng}`;
+
+    alert('GPS detected');
+  }, (err) => {
+    console.warn('GPS error', err);
+    alert('Unable to detect GPS');
+  });
+}
+onGpsModeChange() {
+  if (!this.useAutoGps) {
+    // Switching to manual → clear auto string
+    this.gpsLocation = '';
+  } else {
+    // Switching to auto → clear manual fields
+    this.manualLatitude = '';
+    this.manualLongitude = '';
+  }
+}
 
   uploadProduct() {
     if (!this.imageFile) {
@@ -85,12 +106,43 @@ export class UploadProduct {
     this.loading = true;
 
     const formData = new FormData();
+    let finalGps = '';
+
+if (this.useAutoGps) {
+  if (!this.gpsLocation) {
+    alert("Please detect GPS first");
+    this.loading = false;
+    return;
+  }
+  finalGps = this.gpsLocation.trim();
+} else {
+  const lat = parseFloat(this.manualLatitude);
+  const lon = parseFloat(this.manualLongitude);
+
+  if (isNaN(lat) || isNaN(lon)) {
+    alert("Please enter valid numeric latitude and longitude");
+    this.loading = false;
+    return;
+  }
+
+  if (lat < -90 || lat > 90 || lon < -180 || lon > 180) {
+    alert("Invalid GPS range");
+    this.loading = false;
+    return;
+  }
+
+  finalGps = `${lat},${lon}`;
+}
     formData.append('cropName', this.cropName.trim());
     formData.append('soilType', this.soilType.trim());
     formData.append('pesticides', this.pesticides.trim());
     // ensure backend-friendly date format yyyy-MM-dd (input already gives it)
     formData.append('harvestDate', this.harvestDate);
-    formData.append('gpsLocation', this.gpsLocation.trim());
+    
+
+
+
+formData.append('gpsLocation', finalGps);
     formData.append('price', this.price ? String(this.price) : '0');
     formData.append('quantity', String(this.quantity));
     formData.append('quantityUnit', this.quantityUnit);

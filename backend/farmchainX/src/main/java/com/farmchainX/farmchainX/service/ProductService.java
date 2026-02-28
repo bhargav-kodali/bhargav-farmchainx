@@ -313,6 +313,7 @@ data.put("address", product.getAddress());
 
                     map.put("isSold", isSold);
                     map.put("status", isSold ? "Sold" : "Available");
+                    map.put("publicUuid", product.getPublicUuid());
 
                     return map;
                 }).collect(Collectors.toList());
