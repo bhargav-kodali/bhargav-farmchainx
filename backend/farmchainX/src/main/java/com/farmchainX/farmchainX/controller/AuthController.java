@@ -19,6 +19,7 @@ import com.farmchainX.farmchainX.dto.LoginRequest;
 import com.farmchainX.farmchainX.dto.RegisterRequest;
 import com.farmchainX.farmchainX.dto.TokenRefreshRequest;
 import com.farmchainX.farmchainX.service.AuthService;
+import com.farmchainX.farmchainX.service.PasswordResetService;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -40,7 +41,7 @@ import lombok.extern.slf4j.Slf4j;
 public class AuthController {
 
     private final AuthService authService;
-
+    private final PasswordResetService passwordResetService;
     @PostMapping("/register")
     @Operation(summary = "Register a new user")
     public ResponseEntity<?> register(@Valid @RequestBody RegisterRequest registerRequest) {
@@ -134,4 +135,28 @@ public class AuthController {
         errorResponse.put("message", e.getMessage() != null ? e.getMessage() : "Internal server error");
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body(errorResponse);
     }
+    @PostMapping("/forgot-password")
+public ResponseEntity<?> forgotPassword(@RequestBody Map<String, String> body) {
+
+    String email = body.get("email");
+
+    passwordResetService.createPasswordResetToken(email);
+
+    return ResponseEntity.ok(
+            Map.of("message", "If email exists, reset link sent")
+    );
+}
+
+@PostMapping("/reset-password")
+public ResponseEntity<?> resetPassword(@RequestBody Map<String, String> body) {
+
+    String token = body.get("token");
+    String newPassword = body.get("newPassword");
+
+    passwordResetService.resetPassword(token, newPassword);
+
+    return ResponseEntity.ok(
+            Map.of("message", "Password reset successful")
+    );
+}
 }

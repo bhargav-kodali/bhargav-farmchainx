@@ -7,12 +7,10 @@ import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.farmchainX.farmchainX.dto.AdminAnalyticsDTO;
@@ -23,11 +21,10 @@ import com.farmchainX.farmchainX.model.AdminPromotionRequest;
 import com.farmchainX.farmchainX.model.Role;
 import com.farmchainX.farmchainX.model.User;
 import com.farmchainX.farmchainX.repository.RoleRepository;
+import com.farmchainX.farmchainX.repository.SupplyChainLogRepository;
 import com.farmchainX.farmchainX.repository.UserRepository;
 import com.farmchainX.farmchainX.service.AdminOverviewService;
 import com.farmchainX.farmchainX.service.AdminPromotionService;
-import com.farmchainX.farmchainX.model.SupplyChainLog;
-import com.farmchainX.farmchainX.repository.SupplyChainLogRepository;
 
 @RestController
 @RequestMapping("/api/admin")

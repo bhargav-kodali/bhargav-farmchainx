@@ -30,6 +30,16 @@ export const routes: Routes = [
     loadComponent: () => import('./pages/dashboard/dashboard').then((m) => m.Dashboard),
   },
   {
+  path: 'forgot-password',
+  loadComponent: () =>
+    import('./pages/forgot-password/forgot-password').then(m => m.ForgotPassword)
+},
+{
+  path: 'reset-password',
+  loadComponent: () =>
+    import('./pages/reset-password/reset-password').then(m => m.ResetPassword)
+ },
+  {
     path: 'upload',
     canActivate: [AuthGuard],
     loadComponent: () =>
@@ -281,9 +291,11 @@ export const routes: Routes = [
             (m) => m.DistributorMarketComponent
           ),
       },
+      
     ],
   },
 
   // fallback
   { path: '**', redirectTo: '' },
 ];
+
